@@ -20,7 +20,7 @@
 1. 克隆仓库：
 
    ```powershell
-   git clone https://github.com/tongmu1633/island-voyage.git
+   git clone https://github.com/tomton1010/island-voyage.git
    ```
 
 2. 通过 Unity Hub 安装 **Unity 6000.6.3f1**。网页版构建还需安装对应的 Web Build Support 模块。
