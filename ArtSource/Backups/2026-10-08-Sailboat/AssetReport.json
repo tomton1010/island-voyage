@@ -1,0 +1,288 @@
+{
+  "blender": "5.2.2 LTS",
+  "assets": [
+    {
+      "name": "Whale",
+      "vertices": 12163,
+      "triangles": 23504,
+      "bones": 9,
+      "animations": [
+        "Swim"
+      ]
+    },
+    {
+      "name": "Shark",
+      "vertices": 8717,
+      "triangles": 17068,
+      "bones": 9,
+      "animations": [
+        "Swim"
+      ]
+    },
+    {
+      "name": "Dolphin",
+      "vertices": 8247,
+      "triangles": 16212,
+      "bones": 9,
+      "animations": [
+        "Glide",
+        "Swim"
+      ]
+    },
+    {
+      "name": "Clownfish",
+      "vertices": 1110,
+      "triangles": 2016,
+      "bones": 7,
+      "animations": [
+        "Swim"
+      ]
+    },
+    {
+      "name": "BlueTang",
+      "vertices": 1110,
+      "triangles": 2016,
+      "bones": 7,
+      "animations": [
+        "Swim"
+      ]
+    },
+    {
+      "name": "YellowTang",
+      "vertices": 1110,
+      "triangles": 2016,
+      "bones": 7,
+      "animations": [
+        "Swim"
+      ]
+    },
+    {
+      "name": "Butterflyfish",
+      "vertices": 1110,
+      "triangles": 2016,
+      "bones": 7,
+      "animations": [
+        "Swim"
+      ]
+    },
+    {
+      "name": "Damselfish",
+      "vertices": 1110,
+      "triangles": 2016,
+      "bones": 7,
+      "animations": [
+        "Swim"
+      ]
+    },
+    {
+      "name": "Sardine",
+      "vertices": 1110,
+      "triangles": 2016,
+      "bones": 7,
+      "animations": [
+        "Swim"
+      ]
+    },
+    {
+      "name": "Mackerel",
+      "vertices": 1110,
+      "triangles": 2016,
+      "bones": 7,
+      "animations": [
+        "Swim"
+      ]
+    },
+    {
+      "name": "FlyingFish",
+      "vertices": 1110,
+      "triangles": 2016,
+      "bones": 7,
+      "animations": [
+        "Swim"
+      ]
+    },
+    {
+      "name": "Resident0",
+      "vertices": 20920,
+      "triangles": 40256,
+      "bones": 20,
+      "animations": [
+        "Idle",
+        "Walk",
+        "Wave"
+      ]
+    },
+    {
+      "name": "Resident1",
+      "vertices": 18586,
+      "triangles": 35676,
+      "bones": 20,
+      "animations": [
+        "Idle",
+        "Walk",
+        "Wave"
+      ]
+    },
+    {
+      "name": "Resident2",
+      "vertices": 20920,
+      "triangles": 40256,
+      "bones": 20,
+      "animations": [
+        "Idle",
+        "Walk",
+        "Wave"
+      ]
+    },
+    {
+      "name": "Palm0",
+      "vertices": 16200,
+      "triangles": 28352,
+      "bones": 13,
+      "animations": [
+        "Wind"
+      ]
+    },
+    {
+      "name": "Palm1",
+      "vertices": 16200,
+      "triangles": 28352,
+      "bones": 13,
+      "animations": [
+        "Wind"
+      ]
+    },
+    {
+      "name": "Palm2",
+      "vertices": 16200,
+      "triangles": 28352,
+      "bones": 13,
+      "animations": [
+        "Wind"
+      ]
+    },
+    {
+      "name": "Palm3",
+      "vertices": 16200,
+      "triangles": 28352,
+      "bones": 13,
+      "animations": [
+        "Wind"
+      ]
+    },
+    {
+      "name": "Sailboat",
+      "vertices": 13591,
+      "triangles": 25376,
+      "bones": 3,
+      "animations": [
+        "Wind"
+      ]
+    },
+    {
+      "name": "Cottage",
+      "vertices": 12332,
+      "triangles": 21678,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Jetty",
+      "vertices": 15668,
+      "triangles": 29944,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Bench",
+      "vertices": 616,
+      "triangles": 1188,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Noticeboard",
+      "vertices": 959,
+      "triangles": 1808,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Shrub",
+      "vertices": 2340,
+      "triangles": 3872,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Shell",
+      "vertices": 472,
+      "triangles": 876,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Starfish",
+      "vertices": 652,
+      "triangles": 1060,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Reef0",
+      "vertices": 2131,
+      "triangles": 3550,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Reef1",
+      "vertices": 1064,
+      "triangles": 1632,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Reef2",
+      "vertices": 2664,
+      "triangles": 4152,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Reef3",
+      "vertices": 1525,
+      "triangles": 2514,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Reef4",
+      "vertices": 2198,
+      "triangles": 3508,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Rock0",
+      "vertices": 198,
+      "triangles": 360,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Rock1",
+      "vertices": 198,
+      "triangles": 360,
+      "bones": 0,
+      "animations": []
+    },
+    {
+      "name": "Rock2",
+      "vertices": 198,
+      "triangles": 360,
+      "bones": 0,
+      "animations": []
+    }
+  ]
+}

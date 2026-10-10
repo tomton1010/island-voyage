@@ -1,0 +1,14 @@
+{
+  "blender": "5.2.2 LTS",
+  "assets": [
+    {
+      "name": "Sailboat",
+      "vertices": 18367,
+      "triangles": 32544,
+      "bones": 3,
+      "animations": [
+        "Wind"
+      ]
+    }
+  ]
+}

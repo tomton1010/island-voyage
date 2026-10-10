@@ -1,0 +1,25 @@
+IslandVoyage/Library/
+IslandVoyage/Temp/
+IslandVoyage/Obj/
+IslandVoyage/Logs/
+IslandVoyage/UserSettings/
+IslandVoyage/Builds/
+Tools/Logs/
+Tools/FontCache/
+Tools/Downloads/
+Tools/BlenderValidation/
+Tools/BlenderEnvironment.json
+*.csproj
+*.sln
+*.slnx
+*.blend1
+*.blend2
+
+# Local editor state and machine-specific secrets
+.vs/
+.idea/
+.env
+.env.*
+!.env.example
+Thumbs.db
+.DS_Store

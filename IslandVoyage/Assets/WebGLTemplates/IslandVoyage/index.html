@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12586f">
+  <title>潮汐群岛 · Island Voyage</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2312586f'/%3E%3Cpath d='M32 9v35H12zm4 4 17 31H36M10 48h45l-8 8H19z' fill='%23fff1cc'/%3E%3C/svg%3E">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #12586f; font-family: "Microsoft YaHei", system-ui, sans-serif; }
+    #ocean { position: fixed; inset: 0; }
+    #unity-canvas { display: block; width: 100%; height: 100%; outline: none; }
+    #loading { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; color: #fff1cc; background: radial-gradient(ellipse at 70% 25%, #72b4a0, #12586f 65%); transition: opacity .45s; }
+    #loading h1 { font-size: 34px; font-weight: 500; letter-spacing: .25em; margin: 22px 0 10px; }
+    #loading p { font-size: 13px; letter-spacing: .15em; opacity: .8; }
+    .compass { margin: auto; width: 64px; height: 64px; border: 1px solid #fff1cc66; border-radius: 50%; display: grid; place-items: center; }
+    .compass::after { content: ""; width: 12px; height: 38px; background: linear-gradient(#fff1cc 50%, #fff1cc44 50%); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); animation: drift 4s ease-in-out infinite; }
+    @keyframes drift { 50% { transform: rotate(35deg); } }
+    .track { margin: 24px auto 12px; width: 230px; height: 3px; border-radius: 4px; background: #fff1cc33; overflow: hidden; }
+    #progress { height: 100%; width: 0; background: #fff1cc; transition: width .2s; }
+    #fullscreen { position: absolute; right: 20px; bottom: 112px; border: 1px solid #fff1cc44; border-radius: 8px; padding: 7px 10px; background: #174b4c99; color: #fff1cc; cursor: pointer; font: inherit; font-size: 12px; }
+    #fullscreen:hover { background: #2d8074; }
+    #warning { position: absolute; left: 50%; top: 12%; transform: translateX(-50%); max-width: 650px; color: #fff1cc; background: #163d40; border-radius: 12px; padding: 18px; display: none; }
+  </style>
+</head>
+<body>
+  <main id="ocean">
+    <canvas id="unity-canvas" width="{{{ WIDTH }}}" height="{{{ HEIGHT }}}" tabindex="0" aria-label="近景第三人称海岛游船游戏，W 船头前进，S 船尾倒航，A/D 转舵，右键按住拖拽环绕视角，滚轮缩放，C 恢复视角，Shift 慢行，E 抛竿或提竿，空格或左键收线，Q 收竿，Y 天气，N 自然奇遇，H 海景，左上角为小地图"></canvas>
+    <div id="loading">
+      <div class="compass" aria-hidden="true"></div>
+      <h1>潮汐群岛</h1><p>ISLAND VOYAGE / 海上的慢时光</p>
+      <div class="track"><div id="progress"></div></div>
+      <p id="status" role="status">正在准备海岛…</p>
+      <p>W 前进 · S 倒航 · A/D 转舵 · Shift 慢行 · E 抛竿 / 提竿</p>
+      <p>空格 / 左键收线，松开泄力 · Q 收竿 · 左上角小地图</p>
+      <p>Y 切换天气 · N 自然奇遇 · 右键拖拽视角 · 滚轮缩放</p>
+    </div>
+    <button id="fullscreen" type="button" aria-label="切换游戏全屏" hidden>全屏 F</button>
+    <div id="warning" role="alert"></div>
+  </main>
+  <script src="Build/{{{ LOADER_FILENAME }}}"></script>
+  <script>
+    const canvas = document.getElementById('unity-canvas');
+    canvas.addEventListener('contextmenu', event => event.preventDefault());
+    const status = document.getElementById('status');
+    const warning = document.getElementById('warning');
+    const fullscreen = document.getElementById('fullscreen');
+    createUnityInstance(canvas, {
+      arguments: new URLSearchParams(location.search).get('scenic') === '1' ? ['--scenic'] : [],
+#if PROGRESSIVE_ASSET_LOADING
+      primaryDataUrls: {{{ JSON.stringify(PRIMARY_DATA_FILES) }}},
+      secondaryDataUrls: {{{ JSON.stringify(SECONDARY_DATA_FILES) }}},
+#else
+      dataUrl: 'Build/{{{ DATA_FILENAME }}}',
+#endif
+      frameworkUrl: 'Build/{{{ FRAMEWORK_FILENAME }}}',
+#if USE_WASM
+      codeUrl: 'Build/{{{ CODE_FILENAME }}}',
+#endif
+      streamingAssetsUrl: 'StreamingAssets',
+      companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+      productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+      productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+      fullscreenElementID: 'ocean',
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
+      showBanner: (message, type) => {
+        if (type !== 'error') { console.warn(message); return; }
+        warning.textContent = message; warning.style.display = 'block';
+      }
+    }, progress => {
+      document.getElementById('progress').style.width = `${Math.round(progress * 100)}%`;
+      status.textContent = progress < .9 ? `正在准备海岛… ${Math.round(progress * 100)}%` : '海风已就绪，正在启航…';
+    }).then(instance => {
+      document.getElementById('loading').remove(); fullscreen.hidden = false; canvas.focus();
+      const toggle = () => instance.SetFullscreen(document.fullscreenElement ? 0 : 1);
+      fullscreen.addEventListener('click', toggle);
+      window.addEventListener('keydown', event => {
+        if (event.code === 'KeyF' && !event.repeat) toggle();
+        if (event.code === 'KeyH') fullscreen.hidden = !fullscreen.hidden;
+      });
+      if (new URLSearchParams(location.search).get('scenic') === '1') fullscreen.hidden = true;
+    }).catch(message => {
+      status.textContent = '加载失败，请刷新页面重试';
+      warning.textContent = String(message); warning.style.display = 'block';
+    });
+  </script>
+</body>
+</html>
