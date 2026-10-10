@@ -18,25 +18,29 @@ namespace IslandVoyage
                     float angle=Range(random,0,Mathf.PI*2),ratio=Range(random,1.13f,1.58f);
                     Vector3 p=new Vector3(island.center.x+Mathf.Cos(angle)*island.size.x*ratio,-2.3f,island.center.y+Mathf.Sin(angle)*island.size.y*ratio);
                     if(!WorldLayout.IsWater(p,2))continue;
-                    p.y=-1.8f-Mathf.Clamp(WorldLayout.ShoreDistance(p)*.055f,0,.85f);
+                    p=WorldLayout.OnGround(p,.04f);
                     Transform reef=BlenderAssets.Create("Reef"+((i+k)%5),root,p);
                     reef.localRotation=Quaternion.Euler(0,Range(random,0,360),0);reef.localScale=Vector3.one*Range(random,.65f,1.05f);
-                    stones.Sphere(p+new Vector3(1.4f,-.1f,1),new Vector3(1,.34f,.8f),Art.Hex("86BEB0"),4,7);
+                    WorldBuilder.GroundReef(reef);
+                    Vector3 stone=WorldLayout.OnGround(p+new Vector3(1.4f,0,1),.16f);
+                    if(stone.y<-.8f)stones.Sphere(stone,new Vector3(1,.34f,.8f),Art.Hex("86BEB0"),4,7);
                     for(int j=0;j<5;j++)
                     {
-                        Vector3 tuft=p+new Vector3(Range(random,-2.6f,2.6f),0,Range(random,-2.6f,2.6f));
+                        Vector3 tuft=WorldLayout.OnGround(p+new Vector3(Range(random,-2.6f,2.6f),0,Range(random,-2.6f,2.6f)));
+                        if(tuft.y>-1.7f)continue;
                         for(int blade=0;blade<3;blade++)
                         {
-                            Vector3 bottom=tuft+new Vector3(blade*.11f,0,blade*.06f);
+                            Vector3 bottom=WorldLayout.OnGround(tuft+new Vector3(blade*.11f,0,blade*.06f),-.015f);
                             Vector3 tip=bottom+new Vector3(Range(random,-.3f,.3f),Range(random,.5f,1.15f),Range(random,-.25f,.25f));
                             Color color=blade%2==0?Art.Hex("337E68"):Art.Hex("68AC83");
-                            grass.Triangle(bottom-Vector3.right*.05f,tip,bottom+Vector3.right*.05f,color);
-                            grass.Triangle(bottom-Vector3.forward*.05f,tip,bottom+Vector3.forward*.05f,color);
+                            grass.Triangle(WorldLayout.OnGround(bottom-Vector3.right*.05f,-.015f),tip,WorldLayout.OnGround(bottom+Vector3.right*.05f,-.015f),color);
+                            grass.Triangle(WorldLayout.OnGround(bottom-Vector3.forward*.05f,-.015f),tip,WorldLayout.OnGround(bottom+Vector3.forward*.05f,-.015f),color);
                         }
                     }
                 }
-                Art.Object("Seagrass meadows",grass.Build("Sea grass"),root,Vector3.zero);
-                Art.Object("Visible shallow reef stones",stones.Build("Reef stones"),root,Vector3.zero);
+                var aquatic=new MaterialPropertyBlock();aquatic.SetFloat("_Aquatic",1);
+                foreach(var detail in new[]{Art.Object("Seagrass meadows",grass.Build("Sea grass"),root,Vector3.zero),Art.Object("Visible shallow reef stones",stones.Build("Reef stones"),root,Vector3.zero)})
+                {var renderer=detail.GetComponent<MeshRenderer>();renderer.SetPropertyBlock(aquatic);renderer.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;}
                 Beach(root,island,k,random);
             }
             Props(root);
@@ -85,14 +89,14 @@ namespace IslandVoyage
             for(int i=0;i<(index==0?44:14);i++)
             {
                 float a=Range(random,0,Mathf.PI*2),r=Range(random,.35f,.85f);
-                Vector3 p=new Vector3(island.center.x+Mathf.Cos(a)*island.size.x*r,WorldLayout.LandHeight(island,r),island.center.y+Mathf.Sin(a)*island.size.y*r);
+                Vector3 p=WorldLayout.OnGround(new Vector3(island.center.x+Mathf.Cos(a)*island.size.x*r,0,island.center.y+Mathf.Sin(a)*island.size.y*r));
                 if(index==0 && Vector2.Distance(new Vector2(p.x,p.z),new Vector2(39,15))<7)continue;
                 var shrub=BlenderAssets.Create("Shrub",root,p);shrub.localRotation=Quaternion.Euler(0,i*73,0);shrub.localScale=Vector3.one*Range(random,.7f,1.25f);
             }
             for(int i=0;i<30;i++)
             {
                 float a=Range(random,0,Mathf.PI*2),r=Range(random,.90f,.98f);
-                Vector3 p=new Vector3(island.center.x+Mathf.Cos(a)*island.size.x*r,WorldLayout.LandHeight(island,r)+.035f,island.center.y+Mathf.Sin(a)*island.size.y*r);
+                Vector3 p=WorldLayout.OnGround(new Vector3(island.center.x+Mathf.Cos(a)*island.size.x*r,0,island.center.y+Mathf.Sin(a)*island.size.y*r));
                 var shell=BlenderAssets.Create(i%4==0?"Starfish":"Shell",root,p);shell.localRotation=Quaternion.Euler(0,i*53,0);
             }
         }
@@ -104,13 +108,13 @@ namespace IslandVoyage
             for(int plank=0;plank<3;plank++)g.Box(new Vector3(0,.9f,plank*.25f),new Vector3(3.2f,.14f,.21f),wood,Quaternion.identity);
             g.Box(new Vector3(0,1.6f,.7f),new Vector3(3.2f,.75f,.15f),wood,Quaternion.identity);
             for(int side=-1;side<=1;side+=2)g.Box(new Vector3(side*1.25f,.55f,.3f),new Vector3(.18f,1.1f,.7f),dark,Quaternion.identity);
-            BlenderAssets.Create("Bench",root,new Vector3(32,.95f,3));
+            BlenderAssets.Create("Bench",root,WorldLayout.OnGround(new Vector3(32,0,3),-.02f));
             g=new Geometry();
             for(int side=-1;side<=1;side+=2)g.Cylinder(new Vector3(side*.85f,0,0),new Vector3(side*.85f,2.1f,0),.08f,.08f,wood);
             g.Box(new Vector3(0,1.6f,0),new Vector3(2.15f,1,.16f),wood,Quaternion.identity);
             g.Box(new Vector3(0,1.6f,-.1f),new Vector3(1.9f,.76f,.07f),green,Quaternion.identity);
             g.Box(new Vector3(0,2.2f,0),new Vector3(2.45f,.18f,.5f),Art.Hex("94AD5F"),Quaternion.Euler(0,0,3));
-            BlenderAssets.Create("Noticeboard",root,new Vector3(35,1.3f,7));
+            BlenderAssets.Create("Noticeboard",root,WorldLayout.OnGround(new Vector3(35,0,7),-.025f));
             g=new Geometry();
             g.Box(new Vector3(0,1.15f,0),new Vector3(3,.16f,1.7f),wood,Quaternion.identity);
             for(int side=-1;side<=1;side+=2)
@@ -118,11 +122,12 @@ namespace IslandVoyage
                 g.Box(new Vector3(side*1.05f,.55f,0),new Vector3(.18f,1.1f,1.6f),dark,Quaternion.Euler(0,0,side*12));
                 g.Box(new Vector3(0,.65f,side*1.2f),new Vector3(3.4f,.12f,.45f),wood,Quaternion.identity);
             }
-            Art.Object("Picnic table",g.Build("Table"),root,new Vector3(38,1,1));
+            Art.Object("Picnic table",g.Build("Table"),root,WorldLayout.OnGround(new Vector3(38,0,1)));
             g=new Geometry();
             g.Sphere(Vector3.zero,new Vector3(.46f,1.8f,.13f),Art.Hex("72ACA0"),8,12);
             g.Box(new Vector3(0,0,-.14f),new Vector3(.09f,3.1f,.04f),Art.Hex("F4E1B7"),Quaternion.identity);
             var board=Art.Object("Surfboard beside veranda",g.Build("Surfboard"),root,new Vector3(35,3.3f,10));board.localRotation=Quaternion.Euler(0,-15,12);
+            board.position+=Vector3.up*(WorldLayout.GroundHeight(board.position)-board.GetComponent<MeshRenderer>().bounds.min.y-.025f);
         }
     }
 }

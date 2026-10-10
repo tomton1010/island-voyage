@@ -68,8 +68,16 @@ namespace IslandVoyage
                 float offset=i==0?0:((i+1)/2)*10*(i%2==1?-1:1);
                 Vector3 direction=Quaternion.Euler(0,game.Boat.Root.eulerAngles.y+offset,0)*Vector3.forward;
                 Vector3 start=boat+direction*(immediate?21:54),end=boat-direction*80;
+                Vector3 sideways=Vector3.Cross(Vector3.up,direction);
                 bool safe=true;
-                for(int j=0;j<=24;j++)if(!WorldLayout.IsWater(Vector3.Lerp(start,end,j/24f),13)){safe=false;break;}
+                for(int j=0;j<=32 && safe;j++)
+                {
+                    Vector3 center=Vector3.Lerp(start,end,j/32f);
+                    if(!WorldLayout.IsWater(center,13,2)){safe=false;break;}
+                    // Check the whole eight-school corridor, including spread and longitudinal offsets.
+                    foreach(float side in new[]{-10.2f,10.2f})foreach(float along in new[]{-7f,7f})
+                        if(!WorldLayout.IsWater(center+sideways*side+direction*along,1,2)){safe=false;break;}
+                }
                 if(!safe)continue;routeStart=start;routeEnd=end;routeDirection=-direction;return true;
             }
             return false;

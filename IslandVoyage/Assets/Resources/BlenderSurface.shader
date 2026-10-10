@@ -1,6 +1,6 @@
 Shader "IslandVoyage/BlenderSurface"
 {
-    Properties { _BaseColor("Tint", Color)=(1,1,1,1) _Smoothness("Smoothness",Range(0,1))=.3 _Detail("Detail type",Float)=0 _EncounterVisibility("Encounter visibility",Range(0,1))=1 _Aquatic("Aquatic material",Float)=0 _WaterDepth("Depth below water",Float)=0 }
+    Properties { _BaseColor("Tint", Color)=(1,1,1,1) _Smoothness("Smoothness",Range(0,1))=.3 _Detail("Detail type",Float)=0 _EncounterVisibility("Encounter visibility",Range(0,1))=1 _Aquatic("Aquatic material",Float)=0 _WaterDepth("Depth below water",Float)=0 _WaterSurface("Local waterline",Float)=0 }
     SubShader
     {
         Tags { "RenderType"="Opaque" "RenderPipeline"="UniversalPipeline" }
@@ -25,7 +25,7 @@ Shader "IslandVoyage/BlenderSurface"
                 half _Smoothness;
                 float _Detail;
                 float _EncounterVisibility;
-                float _Aquatic,_WaterDepth;
+                float _Aquatic,_WaterDepth,_WaterSurface;
             CBUFFER_END
             half3 _VoyageAmbient;float _OceanLight;
             struct A {float4 position:POSITION;float3 normal:NORMAL;half4 color:COLOR;UNITY_VERTEX_INPUT_INSTANCE_ID};
@@ -50,15 +50,16 @@ Shader "IslandVoyage/BlenderSurface"
                 SurfaceData s=(SurfaceData)0;s.albedo=albedo;s.metallic=0;s.specular=half3(.04,.04,.04);s.smoothness=_Smoothness;s.normalTS=half3(0,0,1);s.occlusion=1;s.alpha=1;
                 InputData data=(InputData)0;data.positionWS=i.world;data.normalWS=normalize(i.normal);data.viewDirectionWS=GetWorldSpaceNormalizeViewDir(i.world);data.shadowCoord=TransformWorldToShadowCoord(i.world);data.bakedGI=_VoyageAmbient;data.normalizedScreenSpaceUV=GetNormalizedScreenSpaceUV(i.position);data.shadowMask=half4(1,1,1,1);
                 half4 color=UniversalFragmentPBR(data,s);
-                if(_Aquatic>.5 && _WaterDepth>.01)
+                float waterDepth=max(0,_WaterSurface-i.world.y);
+                if(_Aquatic>.5 && waterDepth>.01)
                 {
                     // Absorption removes bright reds first; distance and oblique views hide detail.
                     float distanceToFish=distance(i.world,GetCameraPositionWS());
-                    float path=_WaterDepth/max(.28,abs(data.viewDirectionWS.y));
+                    float path=waterDepth/max(.28,abs(data.viewDirectionWS.y));
                     float absorption=1-exp(-path*.28);
-                    float distant=smoothstep(16,58,distanceToFish)*saturate(_WaterDepth/2.5);
+                    float distant=smoothstep(16,58,distanceToFish)*saturate(waterDepth/2.5);
                     half3 tint=SRGBToLinear(half3(.10,.40,.43))*_OceanLight;
-                    color.rgb*=exp(-_WaterDepth*half3(.24,.085,.05));
+                    color.rgb*=exp(-waterDepth*half3(.24,.085,.05));
                     color.rgb=lerp(color.rgb,tint,saturate(absorption*.76+distant*.38));
                 }
                 color.rgb=MixFog(color.rgb,i.fog);return color;

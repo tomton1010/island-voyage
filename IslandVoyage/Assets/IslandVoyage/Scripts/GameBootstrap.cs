@@ -73,6 +73,7 @@ namespace IslandVoyage
                 CameraRig.UpdatePointer(new Vector2(Screen.width*.17f,0),false,true,true,false);
                 CameraRig.UpdatePointer(Vector2.zero,false,false,true,false);
             }
+            ApplyPreviewView(startArgs);
             if(Array.IndexOf(Environment.GetCommandLineArgs(),"--self-test")>=0)StartCoroutine(RuntimeValidation());
             if(Array.IndexOf(Environment.GetCommandLineArgs(),"--capture")>=0)StartCoroutine(Capture());
         }
@@ -160,6 +161,23 @@ namespace IslandVoyage
         public void ResetBoat(){Fishing.Reset();Boat.Reset();CameraRig.Snap();SetPaused(false);Hud.Toast("小船已返回出发位置",2);}
         public int TotalCatch {get{int total=0;foreach(int count in Catches)total+=count;return total;}}
 
+        void ApplyPreviewView(string[] args)
+        {
+            int positionIndex=Array.IndexOf(args,"--boat-position");
+            if(positionIndex>=0 && positionIndex+1<args.Length)
+            {
+                string[] coordinates=args[positionIndex+1].Split(',');
+                if(coordinates.Length!=2)throw new ArgumentException("Preview boat position requires x,z");
+                var position=new Vector3(float.Parse(coordinates[0],System.Globalization.CultureInfo.InvariantCulture),0,float.Parse(coordinates[1],System.Globalization.CultureInfo.InvariantCulture));
+                if(!WorldLayout.IsWater(position,2,1))throw new ArgumentException("Preview boat position must be navigable water");
+                Boat.Body.position=position;Boat.Root.position=position;Physics.SyncTransforms();
+            }
+            float PreviewFloat(string flag,float fallback)
+            {int index=Array.IndexOf(args,flag);return index>=0 && index+1<args.Length?float.Parse(args[index+1],System.Globalization.CultureInfo.InvariantCulture):fallback;}
+            if(positionIndex>=0 || Array.IndexOf(args,"--view-yaw")>=0 || Array.IndexOf(args,"--view-elevation")>=0 || Array.IndexOf(args,"--view-distance")>=0)
+                CameraRig.SetPreviewView(PreviewFloat("--view-yaw",CameraRig.OrbitYaw),PreviewFloat("--view-elevation",CameraRig.Elevation),PreviewFloat("--view-distance",CameraRig.Distance));
+        }
+
         IEnumerator Capture()
         {
             string[] captureArgs=Environment.GetCommandLineArgs();int delayIndex=Array.IndexOf(captureArgs,"--capture-delay");
@@ -192,6 +210,7 @@ namespace IslandVoyage
             yield return null;
             try
             {
+                EnvironmentValidation.Validate(this);
                 Require(Schools.Count==40,"Forty habitat-distributed schools");Require(Wildlife.ActiveCount==0,"No permanent large animals at startup");
                 for(int species=0;species<8;species++)Require(Schools.FindAll(s=>s.SpeciesIndex==species).Count==5,"Five groups per species");
                 foreach(var school in Schools)Require(WorldLayout.IsWater(school.Home,school.Spread+2),"School habitats are navigable");
@@ -323,14 +342,17 @@ namespace IslandVoyage
                 Weather.SetWeather(WeatherKind.Clear,true);ResetBoat();
                 Require(Events.Start(SeaEventKind.Migration,true),"Safe migration route exists near departure");
                 Require(Events.MigrationSchools.Count==8 && Events.MigrationVisible,"Migration activates eight pooled schools");
-                foreach(var school in Events.MigrationSchools)Require(school.ActiveCount==18 && WorldLayout.IsWater(school.Center,3),"Migration fish start in water");
+                foreach(var school in Events.MigrationSchools)Require(school.ActiveCount==18 && WorldLayout.IsWater(school.Center,3,2),"Migration fish start in deep enough water");
             }
             catch(Exception e){Debug.LogException(e);Application.Quit(1);yield break;}
             Vector3 migrationStart=Events.MigrationSchools[0].Center;
             yield return new WaitForSeconds(2);
             try
             {
-                Require(Vector3.Distance(migrationStart,Events.MigrationSchools[0].Center)>2 && Vector3.Distance(migrationStart,Events.MigrationSchools[0].Center)<4,"Migration swims continuously with bounded speed");
+                float travelled=Vector3.Distance(migrationStart,Events.MigrationSchools[0].Center);
+                Debug.Log("VOYAGE_MIGRATION_DISTANCE: "+travelled.ToString("F3")+"m");
+                Require(travelled>2 && travelled<4,"Migration swims continuously with bounded speed");
+                foreach(var school in Events.MigrationSchools)Require(school.MinimumSeabedClearance>=.449f,"Migrating fish remain above the coastal seabed");
                 var migrant=Events.MigrationSchools[0];Require(migrant.CatchOne(WorldTime),"Migrating fish can be caught");migrant.Spook(Boat.Root.position,WorldTime);Require(migrant.Mood==SchoolMood.Fleeing,"Migration responds to disturbance");
                 Events.Finish();Require(!Events.MigrationVisible && Events.Stage==SeaEventStage.Idle,"Migration pool is disabled after the event");
                 Require(Events.Start(SeaEventKind.RogueSwell),"Rogue swell warning starts");
@@ -395,7 +417,8 @@ namespace IslandVoyage
             try
             {
                 Require(Fishing.CanStart,"A quiet school can be selected for angling");
-                foreach(var group in Schools)Require(group.MinimumSubmergence>1.0f,"Ordinary fish remain below the near-surface band");
+                foreach(var group in Schools)
+                {Require(group.MinimumSubmergence>1.0f,"Ordinary fish remain below the near-surface band");Require(group.MinimumSeabedClearance>=.449f,"Fish remain above the actual coastal seabed");}
                 var renderer=Schools[1].Root.GetComponentInChildren<Renderer>();var properties=new MaterialPropertyBlock();renderer.GetPropertyBlock(properties);
                 Require(properties.GetFloat("_Aquatic")==1 && properties.GetFloat("_WaterDepth")>1,"Fish use depth-dependent water absorption");
                 TryCast();Require(Fishing.Stage==FishingStage.Casting,"E begins a rod cast");

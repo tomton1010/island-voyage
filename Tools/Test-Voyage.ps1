@@ -13,7 +13,8 @@ if($taskProcess.ExitCode -ne 0){throw "Runtime tests failed ($($taskProcess.Exit
 $taskLines=Get-Content -LiteralPath $taskLog
 if(!($taskLines -match 'VOYAGE_RUNTIME_TESTS_PASSED')){throw 'Runtime validation did not report success.'}
 if(!($taskLines -match 'VOYAGE_FISHING_TESTS_PASSED')){throw 'Fishing validation did not report success.'}
+if(!($taskLines -match 'VOYAGE_ENVIRONMENT_TESTS_PASSED')){throw 'Environment validation did not report success.'}
 if($taskLines -match 'NullReferenceException|MissingReferenceException|Shader error|shader is not supported|ArgumentException|InvalidOperationException|ERROR:'){throw 'Runtime log contains an error.'}
-$taskLines | Select-String 'VOYAGE_RUNTIME_TESTS_PASSED|VOYAGE_FISHING_DETAIL|VOYAGE_FISHING_TESTS_PASSED'
+$taskLines | Select-String 'VOYAGE_RUNTIME_TESTS_PASSED|VOYAGE_FISHING_DETAIL|VOYAGE_FISHING_TESTS_PASSED|VOYAGE_ENVIRONMENT_TESTS_PASSED'
 if(!(Test-Path -LiteralPath $taskImage)){throw 'Runtime screenshot was not produced.'}
 Write-Output "Screenshot: $taskImage"

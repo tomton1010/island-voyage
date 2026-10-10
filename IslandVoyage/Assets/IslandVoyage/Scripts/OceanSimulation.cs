@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -37,15 +38,35 @@ namespace IslandVoyage
         public static Mesh SurfaceMesh()
         {
             const int steps=256;const float width=320;
-            var vertices=new Vector3[(steps+1)*(steps+1)];var triangles=new int[steps*steps*6];
-            for(int z=0;z<=steps;z++)for(int x=0;x<=steps;x++)vertices[z*(steps+1)+x]=new Vector3((float)x/steps*width-width/2,0,(float)z/steps*width-width/2);
-            int index=0;for(int z=0;z<steps;z++)for(int x=0;x<steps;x++)
+            var vertices=new List<Vector3>((steps+1)*(steps+1)+16*steps*4);var triangles=new List<int>(steps*steps*6+16*steps*24);
+            for(int z=0;z<=steps;z++)for(int x=0;x<=steps;x++)vertices.Add(new Vector3((float)x/steps*width-width/2,0,(float)z/steps*width-width/2));
+            for(int z=0;z<steps;z++)for(int x=0;x<steps;x++)
             {
                 int a=z*(steps+1)+x,b=a+steps+1;
-                triangles[index++]=a;triangles[index++]=b;triangles[index++]=a+1;triangles[index++]=a+1;triangles[index++]=b;triangles[index++]=b+1;
+                triangles.Add(a);triangles.Add(b);triangles.Add(a+1);triangles.Add(a+1);triangles.Add(b);triangles.Add(b+1);
             }
-            var mesh=new Mesh{name="Moving wave grid",indexFormat=IndexFormat.UInt32};mesh.vertices=vertices;mesh.triangles=triangles;
-            mesh.bounds=new Bounds(Vector3.zero,new Vector3(width,8,width));return mesh;
+            // Keep the near waves at 1.25 m resolution; coarse outer rings end beyond full sea haze.
+            var boundary=new int[steps*4];
+            for(int s=0;s<steps;s++)
+            {
+                boundary[s]=s;boundary[steps+s]=s*(steps+1)+steps;
+                boundary[steps*2+s]=steps*(steps+1)+steps-s;boundary[steps*3+s]=(steps-s)*(steps+1);
+            }
+            var inner=(int[])boundary.Clone();
+            for(int ring=1;ring<=16;ring++)
+            {
+                var outer=new int[boundary.Length];float scale=(width/2+ring*10)/(width/2);
+                for(int s=0;s<boundary.Length;s++){outer[s]=vertices.Count;vertices.Add(vertices[boundary[s]]*scale);}
+                for(int s=0;s<boundary.Length;s++)
+                {
+                    int next=(s+1)%boundary.Length;
+                    triangles.Add(inner[s]);triangles.Add(inner[next]);triangles.Add(outer[s]);
+                    triangles.Add(inner[next]);triangles.Add(outer[next]);triangles.Add(outer[s]);
+                }
+                inner=outer;
+            }
+            var mesh=new Mesh{name="Moving wave grid",indexFormat=IndexFormat.UInt32};mesh.SetVertices(vertices);mesh.SetTriangles(triangles,0);
+            mesh.bounds=new Bounds(Vector3.zero,new Vector3(640,8,640));return mesh;
         }
         public static void Configure(Material material)
         {

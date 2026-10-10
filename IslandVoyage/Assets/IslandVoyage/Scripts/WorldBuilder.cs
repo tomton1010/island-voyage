@@ -9,9 +9,9 @@ namespace IslandVoyage
         {
             Transform root=new GameObject("Tropical archipelago · Blender scenery and simulated ocean").transform;
             var waterMesh=new Geometry();
-            waterMesh.Quad(new Vector3(-600,0,-600),new Vector3(-600,0,600),new Vector3(600,0,600),new Vector3(600,0,-600),Color.white);
+            waterMesh.Quad(new Vector3(-600,0,-600),new Vector3(-600,0,600),new Vector3(600,0,600),new Vector3(600,0,-600),Art.Hex("EADFC1"));
             Mesh plane=waterMesh.Build("Ocean plane");
-            Surface(root,plane,"Ocean floor",-4.5f,false);
+            Surface(root,plane,"Ocean floor",WorldLayout.SeabedHeight,false);
             Surface(root,OceanSimulation.SurfaceMesh(),"Transparent tropical water",0,true);
             var random=new System.Random(2107);
             for(int islandIndex=0;islandIndex<WorldLayout.Islands.Length;islandIndex++)
@@ -19,13 +19,14 @@ namespace IslandVoyage
                 var island=WorldLayout.Islands[islandIndex];
                 var sand=Art.Object("Sand island "+islandIndex,IslandMesh(island,false),root,Vector3.zero);
                 sand.GetComponent<MeshRenderer>().shadowCastingMode=ShadowCastingMode.Off;
+                var aquaticSand=new MaterialPropertyBlock();aquaticSand.SetFloat("_Aquatic",1);sand.GetComponent<MeshRenderer>().SetPropertyBlock(aquaticSand);
                 sand.gameObject.AddComponent<MeshCollider>().sharedMesh=sand.GetComponent<MeshFilter>().sharedMesh;
                 var grass=Art.Object("Low grassy interior "+islandIndex,IslandMesh(island,true),root,Vector3.zero);grass.GetComponent<MeshRenderer>().shadowCastingMode=ShadowCastingMode.Off;
                 int palmCount=islandIndex==0 ? 34 : 10;
                 for(int i=0;i<palmCount;i++)
                 {
                     float angle=(float)random.NextDouble()*Mathf.PI*2,ratio=.28f+(float)random.NextDouble()*.48f;
-                    Vector3 p=new Vector3(island.center.x+Mathf.Cos(angle)*island.size.x*ratio,WorldLayout.LandHeight(island,ratio),island.center.y+Mathf.Sin(angle)*island.size.y*ratio);
+                    Vector3 p=WorldLayout.OnGround(new Vector3(island.center.x+Mathf.Cos(angle)*island.size.x*ratio,0,island.center.y+Mathf.Sin(angle)*island.size.y*ratio));
                     if(islandIndex==0 && Vector2.Distance(new Vector2(p.x,p.z),new Vector2(39,15))<8)continue;
                     Transform palm=BlenderAssets.Create("Palm"+(i%4),root,p);palm.localRotation=Quaternion.Euler(0,(float)random.NextDouble()*360,0);
                     palm.localScale=Vector3.one*(.8f+(float)random.NextDouble()*.45f);
@@ -34,22 +35,31 @@ namespace IslandVoyage
                 for(int i=0;i<18;i++)
                 {
                     float a=(float)random.NextDouble()*Mathf.PI*2,r=.72f+(float)random.NextDouble()*.27f;
-                    Vector3 p=new Vector3(island.center.x+Mathf.Cos(a)*island.size.x*r,WorldLayout.LandHeight(island,r),island.center.y+Mathf.Sin(a)*island.size.y*r);
+                    Vector3 p=WorldLayout.OnGround(new Vector3(island.center.x+Mathf.Cos(a)*island.size.x*r,0,island.center.y+Mathf.Sin(a)*island.size.y*r));
                     var stone=BlenderAssets.Create("Rock"+(i%3),root,p);stone.localScale=new Vector3(.2f+(float)random.NextDouble()*.65f,.4f+(float)random.NextDouble()*.5f,.5f);stone.localRotation=Quaternion.Euler(0,i*73,0);
                 }
                 for(int i=0;i<15;i++)
                 {
                     float a=(float)random.NextDouble()*Mathf.PI*2,r=1.12f+(float)random.NextDouble()*.58f;
-                    Vector3 p=new Vector3(island.center.x+Mathf.Cos(a)*island.size.x*r,-.65f-(r-1)*2.6f,island.center.y+Mathf.Sin(a)*island.size.y*r);
+                    Vector3 p=WorldLayout.OnGround(new Vector3(island.center.x+Mathf.Cos(a)*island.size.x*r,0,island.center.y+Mathf.Sin(a)*island.size.y*r),.04f);
                     if(!WorldLayout.IsWater(p,2))continue;
                     Transform reef=BlenderAssets.Create("Reef"+(i%5),root,p);reef.localRotation=Quaternion.Euler(0,(float)random.NextDouble()*360,0);
                     reef.localScale=Vector3.one*(.5f+(float)random.NextDouble()*.8f);
+                    GroundReef(reef);
                 }
             }
             Transform house=BlenderAssets.Create("Cottage",root,new Vector3(39,2.45f,15));
             house.localRotation=Quaternion.Euler(0,-18,0);house.localScale=Vector3.one*1.25f;
             var houseCollider=house.gameObject.AddComponent<BoxCollider>();houseCollider.center=new Vector3(0,1.5f,0);houseCollider.size=new Vector3(6,3,4.5f);
-            BlenderAssets.Create("Jetty",root,new Vector3(43,0,-7));
+            CottageSupports(house,root);
+            var jetty=BlenderAssets.Create("Jetty",root,new Vector3(43,0,-10));
+            var posts=new Geometry();
+            for(int i=0;i<6;i++)foreach(float x in new[]{-1.14f,1.14f})
+            {
+                Vector3 bottom=jetty.TransformPoint(new Vector3(x,-1.7f,-6+i*2.4f)),ground=WorldLayout.OnGround(bottom,-.1f);
+                if(ground.y<bottom.y)posts.Cylinder(ground,bottom,.1f,.1f,Art.Hex("775D41"));
+            }
+            Art.Object("Jetty seabed supports",posts.Build("Grounded mooring posts"),root,Vector3.zero);
             IslandDetails.Create(root);
             return root;
         }
@@ -57,29 +67,71 @@ namespace IslandVoyage
         static void Surface(Transform parent,Mesh mesh,string name,float height,bool surface)
         {
             Transform t=Art.Object(name,mesh,parent,new Vector3(0,height,0));
-            var material=new Material(Shader.Find("IslandVoyage/Water")){name=name};
-            OceanSimulation.Configure(material);if(surface)OceanSimulation.Surface=t;
-            material.SetFloat("_Surface",surface?1:0);material.SetFloat("_ZWrite",surface?0:1);material.renderQueue=surface?3000:1990;
+            var material=new Material(surface?Shader.Find("IslandVoyage/Water"):Shader.Find("IslandVoyage/Stylized")){name=name};
+            if(surface){OceanSimulation.Configure(material);OceanSimulation.Surface=t;material.SetFloat("_Surface",1);material.SetFloat("_ZWrite",0);}
+            else material.SetFloat("_Aquatic",1);
+            material.renderQueue=surface?3000:1990;
             var renderer=t.GetComponent<MeshRenderer>();renderer.sharedMaterial=material;renderer.shadowCastingMode=ShadowCastingMode.Off;renderer.receiveShadows=false;
         }
 
         static Mesh IslandMesh(WorldLayout.Island island,bool grass)
         {
-            var g=new Geometry();const int sectors=96,rings=9;
-            float outer=grass?.35f:1.07f;
+            var g=new Geometry();const int sectors=96;
+            int rings=grass?9:32;float outer=grass?.35f:WorldLayout.ReefOuterRatio;
             Vector3 Point(float r,float angle)
             {
                 float ratio=r*island.Edge(angle);
-                return new Vector3(island.center.x+Mathf.Cos(angle)*island.size.x*ratio,WorldLayout.LandHeight(island,ratio)+(grass?.035f:0),island.center.y+Mathf.Sin(angle)*island.size.y*ratio);
+                return new Vector3(island.center.x+Mathf.Cos(angle)*island.size.x*ratio,WorldLayout.LandHeight(island,r)+(grass?.035f:0),island.center.y+Mathf.Sin(angle)*island.size.y*ratio);
             }
             for(int ring=0;ring<rings;ring++)
             {
                 float r0=outer*ring/rings,r1=outer*(ring+1)/rings;
-                Color c=grass?Color.Lerp(Art.Hex("7D9565"),Art.Hex("A5AE79"),(float)ring/rings):Color.Lerp(Art.Hex("C9BA96"),Art.Hex("EADFC1"),(float)ring/rings);
+                Color c=grass?Color.Lerp(Art.Hex("7D9565"),Art.Hex("A5AE79"),(float)ring/rings):Color.Lerp(Art.Hex("C9BA96"),Art.Hex("EADFC1"),Mathf.Clamp01(outer*ring/rings));
                 for(int s=0;s<sectors;s++)
                 {float a=s*Mathf.PI*2/sectors,b=(s+1)*Mathf.PI*2/sectors;g.Quad(Point(r0,a),Point(r0,b),Point(r1,b),Point(r1,a),c);}
             }
             return g.Build(grass?"Island grass":"Island sand");
+        }
+
+        public static void GroundReef(Transform reef)
+        {
+            var properties=new MaterialPropertyBlock();properties.SetFloat("_Aquatic",1);
+            float top=float.MinValue;
+            foreach(var renderer in reef.GetComponentsInChildren<Renderer>())
+            {renderer.SetPropertyBlock(properties);renderer.shadowCastingMode=ShadowCastingMode.Off;top=Mathf.Max(top,renderer.bounds.max.y);}
+            // Tall coral cannot grow through the waterline on the shallow beach shelf.
+            if(top>-.8f)reef.gameObject.SetActive(false);
+        }
+
+        static void CottageSupports(Transform house,Transform parent)
+        {
+            var g=new Geometry();Color stone=Art.Hex("AAA18B"),wood=Art.Hex("775D41");
+            Vector3[] corners={new Vector3(-3,0,-2.25f),new Vector3(3,0,-2.25f),new Vector3(3,0,2.25f),new Vector3(-3,0,2.25f)};
+            for(int side=0;side<4;side++)for(int part=0;part<8;part++)
+            {
+                Vector3 a=house.TransformPoint(Vector3.Lerp(corners[side],corners[(side+1)%4],part/8f));
+                Vector3 b=house.TransformPoint(Vector3.Lerp(corners[side],corners[(side+1)%4],(part+1)/8f));
+                g.Quad(a,b,WorldLayout.OnGround(b,-.12f),WorldLayout.OnGround(a,-.12f),stone);
+            }
+            var foundation=Art.Object("Cottage foundation",g.Build("Grounded cottage foundation"),parent,Vector3.zero);
+            foundation.gameObject.AddComponent<MeshCollider>().sharedMesh=foundation.GetComponent<MeshFilter>().sharedMesh;
+            g=new Geometry();
+            foreach(float x in new[]{-3f,-1f,1f,3f})
+            {
+                Vector3 top=house.TransformPoint(new Vector3(x,-.08f,-4.29f));
+                g.Cylinder(WorldLayout.OnGround(top,-.08f),top,.069f,.069f,wood);
+            }
+            foreach(float x in new[]{-2.8f,2.8f})
+            {
+                Vector3 top=house.TransformPoint(new Vector3(x,.07f,-2.6f));
+                g.Cylinder(WorldLayout.OnGround(top,-.08f),top,.09f,.09f,wood);
+            }
+            foreach(float x in new[]{-.85f,.85f})
+            {
+                Vector3 top=house.TransformPoint(new Vector3(x,-.1f,-4.5f)),bottom=house.TransformPoint(new Vector3(x,-.77f,-6.5f));
+                g.Cylinder(bottom,top,.075f,.075f,wood);g.Cylinder(WorldLayout.OnGround(bottom,-.08f),bottom,.075f,.075f,wood);
+            }
+            Art.Object("Veranda ground supports",g.Build("Grounded veranda supports"),parent,Vector3.zero);
         }
 
         static Mesh Palm(int variant)

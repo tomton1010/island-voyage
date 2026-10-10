@@ -1,6 +1,6 @@
 Shader "IslandVoyage/Stylized"
 {
-    Properties { _BaseColor("Tint", Color) = (1,1,1,1) _Swim("Body flex",Vector)=(0,0,0,0) }
+    Properties { _BaseColor("Tint", Color) = (1,1,1,1) _Swim("Body flex",Vector)=(0,0,0,0) _Aquatic("Aquatic material",Float)=0 }
     SubShader
     {
         Tags { "RenderPipeline"="UniversalPipeline" "RenderType"="Opaque" "Queue"="Geometry" }
@@ -20,8 +20,9 @@ Shader "IslandVoyage/Stylized"
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
                 float4 _Swim;
+                float _Aquatic;
             CBUFFER_END
-            half3 _VoyageAmbient;
+            half3 _VoyageAmbient;float _OceanLight;float4 _SeaFog,_SeaHorizon;
             struct Attributes { float4 positionOS:POSITION; float3 normalOS:NORMAL; half4 color:COLOR; UNITY_VERTEX_INPUT_INSTANCE_ID };
             struct Varyings {float4 positionCS:SV_POSITION;float3 normalWS:TEXCOORD0;half4 color:COLOR;float3 world:TEXCOORD1;half fog:TEXCOORD2;UNITY_VERTEX_INPUT_INSTANCE_ID};
             Varyings vert(Attributes a)
@@ -39,8 +40,18 @@ Shader "IslandVoyage/Stylized"
                 UNITY_SETUP_INSTANCE_ID(i);
                 Light sun=GetMainLight(TransformWorldToShadowCoord(i.world));
                 half direct=saturate(dot(normalize(i.normalWS),sun.direction));
-                half3 color=SRGBToLinear(i.color.rgb)*(_VoyageAmbient+sun.color*direct*sun.shadowAttenuation*.56);
-                color = MixFog(color,i.fog);
+                // Scattered underwater light softens shadows before they reach the seabed.
+                half shadow=_Aquatic>.5 && i.world.y<0?lerp(sun.shadowAttenuation,1,1-exp(i.world.y*.6)):sun.shadowAttenuation;
+                half3 color=SRGBToLinear(i.color.rgb)*(_VoyageAmbient+sun.color*direct*shadow*.56);
+                if(_Aquatic>.5 && i.world.y<0)
+                {
+                    float depth=-i.world.y;float3 view=GetWorldSpaceNormalizeViewDir(i.world);
+                    float absorption=1-exp(-depth/max(.28,abs(view.y))*.28);
+                    color*=exp(-depth*half3(.24,.085,.05));
+                    color=lerp(color,SRGBToLinear(half3(.10,.40,.43))*_OceanLight,absorption*.76);
+                    color=lerp(color,SRGBToLinear(_SeaHorizon.rgb),smoothstep(_SeaFog.x,_SeaFog.y,distance(i.world,GetCameraPositionWS())));
+                }
+                else color = MixFog(color,i.fog);
                 return half4(color,1);
             }
             ENDHLSL
@@ -61,6 +72,7 @@ Shader "IslandVoyage/Stylized"
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
                 float4 _Swim;
+                float _Aquatic;
             CBUFFER_END
             float3 _LightDirection;
             struct A {float4 position:POSITION;float3 normal:NORMAL;UNITY_VERTEX_INPUT_INSTANCE_ID};

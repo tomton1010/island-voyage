@@ -27,6 +27,8 @@ namespace IslandVoyage
         public void Zoom(float change)=>Distance=Mathf.Clamp(Distance+change,MinDistance,MaxDistance);
         public void ResetZoom()=>Distance=DefaultDistance;
         public void ResetView(){ResetZoom();OrbitYaw=0;Elevation=DefaultElevation;Dragging=false;}
+        public void SetPreviewView(float yaw,float elevation,float distance)
+        {OrbitYaw=Mathf.DeltaAngle(0,yaw);Elevation=Mathf.Clamp(elevation,MinElevation,MaxElevation);Distance=Mathf.Clamp(distance,MinDistance,MaxDistance);Dragging=false;Snap();}
         // Positions are sampled once per frame. Release, focus loss and overlays end the gesture.
         public void UpdatePointer(Vector2 pointer,bool down,bool held,bool allowed,bool overUI)
         {

@@ -63,7 +63,7 @@ public static class VoyageBuild
         graphics.FindProperty("m_FogKeepExp").boolValue=false;
         graphics.FindProperty("m_FogKeepExp2").boolValue=false;
         graphics.ApplyModifiedPropertiesWithoutUndo();
-        PlayerSettings.companyName="Island Voyage";PlayerSettings.productName="潮汐群岛";PlayerSettings.bundleVersion="0.5.0";
+        PlayerSettings.companyName="Island Voyage";PlayerSettings.productName="潮汐群岛";PlayerSettings.bundleVersion="0.5.1";
         PlayerSettings.colorSpace=ColorSpace.Linear;PlayerSettings.defaultScreenWidth=1600;PlayerSettings.defaultScreenHeight=900;PlayerSettings.fullScreenMode=FullScreenMode.Windowed;PlayerSettings.resizableWindow=true;PlayerSettings.runInBackground=true;
         PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone,ScriptingImplementation.Mono2x);
         PlayerSettings.WebGL.compressionFormat=WebGLCompressionFormat.Disabled;PlayerSettings.WebGL.decompressionFallback=false;

@@ -124,8 +124,8 @@ namespace IslandVoyage
                     Vector3 localFish=game.Boat.Root.InverseTransformPoint(desired);
                     localFish.x=(localFish.x>=0?1:-1)*Mathf.Max(1.3f,Mathf.Abs(localFish.x));
                     desired=game.Boat.Root.TransformPoint(localFish);
-                    if(!WorldLayout.IsWater(desired,.6f))desired=Target.HookedPosition;
-                    desired.y=Mathf.Max(-4.05f,OceanSimulation.Height(desired,game.WorldTime)-Mathf.Lerp(.35f,Target.AverageDepth,Fight.Stamina));
+                    if(!WorldLayout.IsWater(desired,.6f,1.3f))desired=Target.HookedPosition;
+                    desired.y=WorldLayout.SubmergedHeight(desired,Mathf.Lerp(.45f,Target.AverageDepth,Fight.Stamina),game.WorldTime);
                     Target.MoveHooked(desired,game.Boat.Root.position-desired,dt);
                     Bobber=SurfaceOf(Target.HookedPosition);
                     if(Fight.Outcome==FightOutcome.LineBroken)Retrieve("线断了：张力过高；下次鱼冲刺时松开收线",true);
